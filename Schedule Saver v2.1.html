@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Scheduler_2310314059</title>
+
+    <style>
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+            border: 2px solid #0011ff;
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+            background-color: rgb(0, 153, 255);
+        }
+
+        .delete-btn,
+        .edit-btn {
+            position: absolute;
+            top: 5px;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            right: 70px;
+        }
+
+        .delete-btn {
+            right: 5px;
+            color: #ff0000;
+        }
+
+        body {
+            background-color: rgb(202, 202, 202);
+        }
+
+        .additional-info {
+            margin-top: 10px;
+	        white-space: pre-line;
+        }
+	
+	    .headline {
+  		    text-align: center;
+            color: black;
+            text-shadow: black 2px;
+	    }
+	
+        .isi {
+            background-color: rgb(0, 106, 255);
+            border-color: black;
+            border-style: solid;
+            border-width: 4px;
+            padding-left: 10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .tersimpan {
+            background-color: rgb(0, 106, 255);
+            border-color: black;
+            border-style: solid;
+            border-width: 4px;
+            padding-left: 10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-right: 10px;
+            border-radius: 8px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: white;
+            border: 2px solid black;
+            color: darkblue;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .kotaksimpan {
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            text-shadow: black 2px 2px 2px;
+            color: white;
+        }
+
+        textarea {
+            width: 70%;
+            border-radius: 5px;
+            padding-left: 10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-right: 10px;
+        }
+
+        .kotakputih {
+            border-radius: 5px;
+        }
+
+        label {
+            color: white;
+            text-shadow: black 2px 2px 2px;
+        }
+        
+        .toggle-btn {
+            background-color: rgb(0, 153, 255);
+            border: none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h2 class="headline">Task Scheduler</h2>
+	<hr color="black"><br>
+    <div class="isi">
+    <form id="taskForm">
+        <label for="taskName">Task Name:</label>
+        <input class="kotakputih" type="text" id="taskName" name="taskName" required>
+	<br><br>
+        <label for="additionalInfo">Additional Information:</label><br>
+        <textarea id="additionalInfo" name="additionalInfo" rows="4"></textarea>
+	<br><br>
+        <label for="taskDate">Date:</label>
+        <input class="kotakputih" type="date" id="taskDate" name="taskDate" required>
+	<br><br>
+        <label for="taskTime">Time:</label>
+        <input class="kotakputih" type="time" id="taskTime" name="taskTime" required>
+	<br><br>
+        <button type="button" onclick="saveTask()">Save Task</button>
+        <button type="button" onclick="clearForm()">Cancel</button>
+    </form>
+    </div>
+    <br>
+
+    <div class="tersimpan">
+        <h3 class="kotaksimpan">Scheduled Tasks</h3>
+        <button type="button" onclick="toggleTaskList()">Open/Close</button>
+        <div id="taskListContainer">
+            <ul id="taskList"></ul>
+        </div>
+    </div>
+
+<script>
+
+    // Load existing tasks from localStorage on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        loadTasks();
+    });
+
+    function saveTask() {
+        // Get values from the form
+        var taskName = document.getElementById("taskName").value;
+        var additionalInfo = document.getElementById("additionalInfo").value;
+        var taskDate = document.getElementById("taskDate").value;
+        var taskTime = document.getElementById("taskTime").value;
+    
+        saveTaskToLocalStorage(taskName, additionalInfo, taskDate, taskTime);
+
+        displayScheduledTask(taskName, additionalInfo, taskDate, taskTime);
+        
+        // Clear the form fields
+        clearForm();
+
+        // Schedule a notification for the new task
+        scheduleNotifications(taskDate, taskTime, taskName);
+    }
+
+    function clearForm() {
+
+        document.getElementById("taskName").value = "";
+        document.getElementById("additionalInfo").value = "";
+        document.getElementById("taskDate").value = "";
+        document.getElementById("taskTime").value = "";
+
+    }
+
+    function saveTaskToLocalStorage(name, additionalInfo, date, time) {
+        // Get existing tasks from localStorage
+        var existingTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+        // Add the new task to the array
+        existingTasks.push({ name: name, additionalInfo: additionalInfo, date: date, time: time});
+
+        // Save the updated array back to localStorage
+        localStorage.setItem("tasks", JSON.stringify(existingTasks));
+    }
+
+    function displayScheduledTask(name, additionalInfo, date, time) {
+        // Create a new list item
+        var listItem = document.createElement("li");
+
+        // Populate the list item with task details
+        listItem.innerHTML =
+            "<strong>Task:</strong> <span style='color: white; text-shadow: 2px 2px 2px #000;'>" + name + "</span><br>" +
+            "<button class='toggle-btn' onclick='toggleTaskDetails(this)'>&#9776;</button>" +
+            "<div class='task-details' style='display: none;'>" +
+            "<div class='additional-info'><strong>Additional Information:</strong> <span style='color: white; text-shadow: 2px 2px 4px #000;'> " + "<br>" + additionalInfo + "</span></div>" + "<br>" + "<br>" +
+            "<strong>Date:</strong> <em> <span style='color: white; text-shadow: 0.5px 0.5px 0.5px red;'>" + date + "</span></em>" + "<br>" +
+            "<strong>Time:</strong> <em> <span style='color: white; text-shadow: 0.5px 0.5px 0.5px red;'>" + time + "</span></em>";
+                
+        document.getElementById("taskList").appendChild(listItem);
+        
+        // Create an edit button
+        var editButton = document.createElement("span");
+        editButton.className = "edit-btn";
+        editButton.innerHTML = "Edit";
+        editButton.onclick = function() {
+            editTask(listItem, name, additionalInfo, date, time);
+        };
+
+        // Create a line break
+        var lineBreak = document.createElement("br");
+
+        // Create a delete button
+        var deleteButton = document.createElement("span");
+        deleteButton.className = "delete-btn";
+        deleteButton.innerHTML = "Delete";
+        deleteButton.onclick = function() {
+            confirmLink(listItem, name, additionalInfo, date, time);
+        };
+
+        // Append the edit button, line break, and delete button to the list item
+        listItem.appendChild(editButton);
+        listItem.appendChild(lineBreak);
+        listItem.appendChild(deleteButton);
+    }
+
+    function confirmLink(listItem, name, additionalInfo, date, time) {
+        var result = window.confirm("Are you sure want to delete?");
+        if (result) {
+          // Pengguna mengklik "Yes", menghapus task
+          deleteTask(listItem, name, additionalInfo, date, time);
+        } else {
+          // Pengguna mengklik "Cancel", tidak jadi menghapus
+          alert("Canceled");
+        }
+      }
+
+    function deleteTask(listItem, name, additionalInfo, date, time) {
+        // Remove the list item from the task list
+        document.getElementById("taskList").removeChild(listItem);
+
+        // Get existing tasks from localStorage
+        var existingTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+        var sameNotFound = false;
+        // Find and remove the task from the array
+        existingTasks = existingTasks.filter(function(task) {
+            var isNotSame = !(task.name === name && task.additionalInfo === additionalInfo && task.date === date && task.time === time)
+            var result = isNotSame || sameNotFound;
+            if (!isNotSame) sameNotFound = true;
+            return result;
+        });
+
+        // Save the updated array back to localStorage
+        localStorage.setItem("tasks", JSON.stringify(existingTasks));
+    }
+
+    function editTask(listItem, name, additionalInfo, date, time) {
+        // Populate the form fields with task details
+        document.getElementById("taskName").value = name;
+        document.getElementById("additionalInfo").value = additionalInfo;
+        document.getElementById("taskDate").value = date;
+        document.getElementById("taskTime").value = time;
+
+        deleteTask(listItem, name, additionalInfo, date, time);
+    }
+
+    function toggleTaskList() {
+        var taskListContainer = document.getElementById("taskListContainer");
+        taskListContainer.style.display = (taskListContainer.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function toggleTaskDetails(button) {
+        var taskDetails = button.nextElementSibling;
+        taskDetails.style.display = (taskDetails.style.display === 'none') ? 'block' : 'none';
+    }    
+
+    function loadTasks() {
+        // Get existing tasks from localStorage
+        var existingTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+        // Display existing tasks on the page
+        existingTasks.forEach(function(task) {
+            displayScheduledTask(task.name, task.additionalInfo, task.date, task.time);
+        });
+    }
+
+    // Function to schedule notifications for tasks
+    function scheduleNotifications(date, time, taskName) {
+        const dueDateTime = new Date(date + ' ' + time);
+        const currentTime = new Date();
+
+        // Check if the due date is in the future
+        if (dueDateTime > currentTime) {
+            // Calculate the time difference in milliseconds
+            const timeDiff = dueDateTime - currentTime;
+
+            // Schedule a notification
+            setTimeout(() => {
+                if (Notification.permission === 'granted') {
+                    new Notification('Task Due', {
+                        body: `Task "${taskName}" is due now!`,
+                    });
+                } else {
+                    // Request permission if not already granted
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification('Task Due', {
+                                body: `Task "${taskName}" is due now!`,
+                            });
+                        }
+                    });
+                }
+            }, timeDiff);
+        }
+    }
+
+</script>
+
+</body>
+
+</html>
